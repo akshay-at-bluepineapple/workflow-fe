@@ -1,103 +1,154 @@
-import Image from "next/image";
+'use client';
+import { useCallback, useState, useEffect } from 'react';
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  addEdge,
+  useNodesState,
+  useEdgesState,
+  type OnConnect,
+  type Edge,
+} from '@xyflow/react';
 
-export default function Home() {
+import '@xyflow/react/dist/style.css';
+
+import { initialNodes, nodeTypes } from '../nodes';
+import { initialEdges, edgeTypes } from '../edges';
+import type { AppNode } from '../nodes/types';
+
+export default function App() {
+  const [nodes, setNodes, onNodesChange] = useNodesState<AppNode>(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [edgeType, setEdgeType] = useState<'step' | 'default' | 'smoothstep'>('step');
+
+  console.log("nodes", nodes)
+  console.log("edges", edges)
+  const onConnect: OnConnect = useCallback(
+    (connection) => setEdges((edges) => addEdge({ ...connection, type: edgeType }, edges)),
+    [setEdges, edgeType]
+  );
+
+  const onEdgeClick = useCallback(
+    (event: React.MouseEvent, edge: Edge) => {
+      event.stopPropagation();
+      setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    },
+    [setEdges]
+  );
+
+  const addNode = (title: string, type: AppNode['type']) => {
+    const newNode: AppNode = {
+      id: `${Date.now()}`,
+      type,
+      position: { x: Math.random() * 300, y: Math.random() * 300 },
+      data: {
+        title,
+        description: '',
+        onDelete: (idToRemove: string) => {
+          setNodes((nds) => nds.filter((n) => n.id !== idToRemove));
+          setEdges((eds) => eds.filter((e) => e.source !== idToRemove && e.target !== idToRemove));
+        },
+        onChange: (idToUpdate: string, field: string, value: string) => {
+          setNodes((nds) =>
+            nds.map((node) =>
+              node.id === idToUpdate
+                ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    [field]: value,
+                  },
+                }
+                : node
+            )
+          );
+        },
+      },
+    };
+    setNodes((nds) => [...nds, newNode]);
+  };
+
+
+  const resetNode = () => {
+    setNodes([])
+    setEdges([])
+  }
+
+  useEffect(() => {
+    setEdges((eds) =>
+      eds.map((edge) => ({
+        ...edge,
+        type: edgeType,
+      }))
+    );
+  }, [edgeType, setEdges]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="flex h-screen">
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-100 p-4 shadow-md">
+        <h2 className="text-xl font-semibold mb-4">Tools</h2>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => addNode('Title', 'input-node')}
+          className="w-full mb-2 bg-amber-300 hover:bg-amber-400 p-2 rounded"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          Add Node
+        </button>
+
+        <button
+          onClick={() => addNode('Start', 'start-node')}
+          className="w-full mb-2 bg-green-300 hover:bg-green-400 p-2 rounded"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          Add Start Node
+        </button>
+
+        <button
+          onClick={() => addNode('End', 'end-node')}
+          className="w-full mb-4 bg-red-300 hover:bg-red-400 p-2 rounded"
         >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          Add End Node
+        </button>
+
+        <button
+          onClick={() => resetNode()}
+          className="w-full mb-4 bg-blue-300 hover:bg-blue-400 p-2 rounded"
+        >
+          Reset
+        </button>
+
+        <label className="block mb-1 font-medium">Edge Type:</label>
+        <select
+          value={edgeType}
+          onChange={(e) => setEdgeType(e.target.value as any)}
+          className="w-full p-2 rounded border border-gray-300"
+        >
+          <option value="default">Default</option>
+          <option value="step">Step</option>
+          <option value="smoothstep">Smooth Step</option>
+        </select>
+      </div>
+
+      {/* Flow Canvas */}
+      <div className="flex-1">
+        <ReactFlow
+          nodes={nodes}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          edges={edges}
+          edgeTypes={edgeTypes}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onEdgeClick={onEdgeClick}
+          fitView
+        >
+          <Background />
+          <MiniMap />
+          <Controls />
+        </ReactFlow>
+      </div>
     </div>
   );
 }
