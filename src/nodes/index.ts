@@ -12,5 +12,5 @@ export const nodeTypes = {
   'input-node': InputTypes,
   'start-node': StartNode,
   'end-node': EndNode
-  // Add any of your custom nodes here!
+  
 };
